@@ -92,12 +92,12 @@ async def startup_validation():
     logger.info("=" * 60)
 
     try:
-        from playwright.sync_api import sync_playwright
+        from playwright.async_api import async_playwright
 
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
             version = browser.version
-            browser.close()
+            await browser.close()
 
         logger.info(f"✅ Playwright Chromium ready (version: {version})")
         logger.info(f"✅ PDF conversion: READY")
