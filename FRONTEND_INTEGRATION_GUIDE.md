@@ -120,9 +120,14 @@ interface PDFConversionRequest {
 - **Body**: PDF file bytes
 
 **Quality Settings:**
-- `high`: Full resolution (1920×1080), larger file size
-- `medium`: Good quality (85% scale), balanced
-- `low`: Compressed (70% scale), smaller file size
+- `high`: Full resolution viewport (1920×1080), 16"×9" true 16:9 PDF, larger file size
+- `medium`: Medium resolution (1440×810), 16"×9" PDF, balanced
+- `low`: Lower resolution (960×540), 16"×9" PDF, smaller file size
+
+**PDF Generation Mode:**
+- Uses Reveal.js print-pdf mode (`?print-pdf` parameter) for optimal slide layout
+- Automatically hides debug UI elements (badges, controls, navigation)
+- Produces clean, presentation-ready PDF output
 
 ### 4. Convert to PPTX
 **POST** `/convert/pptx`

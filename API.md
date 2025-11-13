@@ -463,11 +463,13 @@ Content-Type: application/json
 
 ### PDF Quality Comparison
 
-| Quality | Resolution | DPI | File Size | Generation Time |
-|---------|-----------|-----|-----------|-----------------|
-| High | 1920×1080 | 300 | ~500KB-2MB | ~8-12 seconds |
-| Medium | 1440×810 | 200 | ~300KB-1MB | ~5-8 seconds |
-| Low | 960×540 | 150 | ~150KB-500KB | ~3-5 seconds |
+| Quality | Viewport | PDF Dimensions | File Size | Generation Time |
+|---------|----------|----------------|-----------|-----------------|
+| High | 1920×1080 | 16"×9" (true 16:9) | ~500KB-2MB | ~8-12 seconds |
+| Medium | 1440×810 | 16"×9" (true 16:9) | ~300KB-1MB | ~5-8 seconds |
+| Low | 960×540 | 16"×9" (true 16:9) | ~150KB-500KB | ~3-5 seconds |
+
+**Note**: All PDFs are generated using Reveal.js print-pdf mode for optimal layout. Debug UI elements (badges, controls) are automatically hidden.
 
 ### PPTX Quality Comparison
 

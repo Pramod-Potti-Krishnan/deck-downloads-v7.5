@@ -22,7 +22,9 @@ Returns URL            ← URL →    Fetches and converts
 
 ## Features
 
-- ✅ **PDF Export**: High-fidelity PDF generation using browser rendering
+- ✅ **PDF Export**: High-fidelity PDF generation using Reveal.js print-pdf mode
+- ✅ **Perfect 16:9 Aspect Ratio**: True 16"×9" dimensions for presentation slides
+- ✅ **Clean Output**: Automatically hides debug UI elements and controls
 - ✅ **PPTX Export**: PowerPoint files with screenshot-based slides
 - ✅ **Quality Control**: High/medium/low quality options
 - ✅ **Orientation Support**: Landscape and portrait for PDF
@@ -186,9 +188,11 @@ async with httpx.AsyncClient(timeout=60.0) as client:
 ## Quality Settings
 
 ### PDF Quality
-- **high**: 1920×1080 resolution, best for printing
-- **medium**: 1440×810 resolution, good for screen sharing
-- **low**: 960×540 resolution, fast generation
+- **high**: 1920×1080 viewport, 16"×9" true 16:9 aspect ratio, best for printing
+- **medium**: 1440×810 viewport, 16"×9" aspect ratio, good for screen sharing
+- **low**: 960×540 viewport, 16"×9" aspect ratio, fast generation
+
+**Note**: All PDFs use Reveal.js print-pdf mode for optimal layout and automatically hide debug UI elements.
 
 ### PPTX Quality
 - **high**: 1920×1080 screenshots, ~3-5MB per deck

@@ -29,7 +29,8 @@ class PDFConverter(BaseConverter):
         Generate a PDF from a presentation.
 
         This method uses Playwright's built-in PDF generation to create
-        a multi-page PDF directly from the presentation HTML.
+        a multi-page PDF directly from the presentation HTML using
+        Reveal.js print-pdf mode for optimal rendering.
 
         Args:
             presentation_id: The UUID of the presentation
@@ -57,12 +58,19 @@ class PDFConverter(BaseConverter):
                 args=['--disable-web-security']
             )
 
-            # Create page with presentation dimensions
-            page = await browser.new_page()
+            # Create page with proper 16:9 viewport for presentations
+            # Using higher resolution for better quality
+            viewport_width = 1920 if quality == "high" else 1440 if quality == "medium" else 960
+            viewport_height = 1080 if quality == "high" else 810 if quality == "medium" else 540
 
-            # Build presentation URL
-            url = f"{self.base_url}/p/{presentation_id}"
-            logger.info(f"Navigating to: {url}")
+            page = await browser.new_page(
+                viewport={'width': viewport_width, 'height': viewport_height}
+            )
+
+            # Build presentation URL with print-pdf parameter for Reveal.js
+            # This enables Reveal.js print mode which layouts all slides for PDF
+            url = f"{self.base_url}/p/{presentation_id}?print-pdf"
+            logger.info(f"Navigating to: {url} (print-pdf mode)")
 
             # Navigate to presentation
             response = await page.goto(url, wait_until='networkidle', timeout=30000)
@@ -74,15 +82,42 @@ class PDFConverter(BaseConverter):
             await page.wait_for_selector('.reveal.ready', timeout=15000)
             logger.info("Reveal.js initialized successfully")
 
-            # Additional wait for any dynamic content
-            await page.wait_for_timeout(1000)
+            # Inject CSS to hide debug UI elements
+            await page.add_style_tag(content="""
+                /* Hide all debug UI elements */
+                .debug-badge,
+                .reveal-controls,
+                .reveal-progress,
+                [class*='debug'],
+                footer.controls,
+                .controls-help,
+                button[aria-label*='help'],
+                button[aria-label*='overlay'],
+                .badge,
+                [style*='v7.5-main'] {
+                    display: none !important;
+                    visibility: hidden !important;
+                }
+
+                /* Ensure clean print output */
+                @media print {
+                    .debug-badge,
+                    .reveal-controls,
+                    .reveal-progress,
+                    footer.controls {
+                        display: none !important;
+                    }
+                }
+            """)
+
+            # Additional wait for any dynamic content and CSS to apply
+            await page.wait_for_timeout(2000)
 
             # Set PDF dimensions based on quality
             scale = self._get_scale_factor(quality)
 
-            # PDF options
+            # PDF options for true 16:9 aspect ratio
             pdf_options = {
-                "format": "Letter" if not landscape else None,
                 "landscape": landscape,
                 "print_background": print_background,
                 "scale": scale,
@@ -95,18 +130,22 @@ class PDFConverter(BaseConverter):
                 }
             }
 
-            # Custom dimensions for 16:9 presentation (if landscape)
+            # Set proper 16:9 dimensions (true aspect ratio)
             if landscape:
-                # Use custom dimensions for 16:9 aspect ratio
-                pdf_options["width"] = "10.67in"  # 1920px / 180 DPI
-                pdf_options["height"] = "6in"     # 1080px / 180 DPI
+                # True 16:9 aspect ratio for presentation slides
+                pdf_options["width"] = "16in"   # 16:9 ratio
+                pdf_options["height"] = "9in"   # 16:9 ratio
+            else:
+                # Portrait mode (9:16)
+                pdf_options["width"] = "9in"
+                pdf_options["height"] = "16in"
 
             # Save to file if path provided
             if output_path:
                 pdf_options["path"] = str(output_path)
 
             # Generate PDF
-            logger.info(f"Generating PDF with quality: {quality}, landscape: {landscape}")
+            logger.info(f"Generating PDF with quality: {quality}, landscape: {landscape}, dimensions: 16:9")
             pdf_bytes = await page.pdf(**pdf_options)
 
             logger.info(f"PDF generated successfully ({len(pdf_bytes)} bytes)")
