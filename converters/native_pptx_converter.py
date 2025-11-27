@@ -180,8 +180,8 @@ class NativePPTXConverter(BaseConverter):
         
         # 3. Chart (Hybrid Capture)
         # We need to capture the element at .chart-container
-        # Selector: [data-slide-index="{slide_index}"] .chart-container
-        selector = f'[data-slide-index="{slide_index}"] .chart-container'
+        # Selector: .chart-container[data-slide-index="{slide_index}"]
+        selector = f'.chart-container[data-slide-index="{slide_index}"]'
         chart_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector)
         
         if chart_bytes:
@@ -237,8 +237,8 @@ class NativePPTXConverter(BaseConverter):
         )
         
         # 3. Diagram (Left) - Hybrid Capture
-        # Selector: [data-slide-index="{slide_index}"] .diagram-container
-        selector = f'[data-slide-index="{slide_index}"] .diagram-container'
+        # Selector: .diagram-container[data-slide-index="{slide_index}"]
+        selector = f'.diagram-container[data-slide-index="{slide_index}"]'
         diagram_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector)
         
         if diagram_bytes:
@@ -279,14 +279,14 @@ class NativePPTXConverter(BaseConverter):
         self._add_text_box(slide, content.get('element_1', ''), (2, 32, 3, 4), 24, False, RGBColor(107, 114, 128))
         
         # 3. Left Chart (Hybrid)
-        selector_left = f'[data-slide-index="{slide_index}"] [data-section-type="chart1"]'
+        selector_left = f'[data-section-type="chart1"][data-slide-index="{slide_index}"]'
         chart1_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector_left)
         if chart1_bytes:
             left, top, width, height = self._grid_to_inches(2, 16, 5, 14)
             slide.shapes.add_picture(io.BytesIO(chart1_bytes), left, top, width, height)
             
         # 4. Right Chart (Hybrid)
-        selector_right = f'[data-slide-index="{slide_index}"] [data-section-type="chart2"]'
+        selector_right = f'[data-section-type="chart2"][data-slide-index="{slide_index}"]'
         chart2_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector_right)
         if chart2_bytes:
             left, top, width, height = self._grid_to_inches(17, 31, 5, 14)
@@ -306,16 +306,16 @@ class NativePPTXConverter(BaseConverter):
         """
         Render L25 Layout: Main Content Shell (Hybrid Rich Content).
         """
-        # 1. Title
-        self._add_text_box(slide, content.get('slide_title', ''), (2, 32, 2, 3), 42, True, RGBColor(31, 41, 55))
+        # 1. Title - Increased height to 2 rows (2-4) to prevent overlap
+        self._add_text_box(slide, content.get('slide_title', ''), (2, 32, 2, 4), 42, True, RGBColor(31, 41, 55))
         
-        # 2. Subtitle
+        # 2. Subtitle - Moved to row 4-5
         subtitle = content.get('subtitle') or content.get('element_1')
-        self._add_text_box(slide, subtitle, (2, 32, 3, 4), 24, False, RGBColor(107, 114, 128))
+        self._add_text_box(slide, subtitle, (2, 32, 4, 5), 24, False, RGBColor(107, 114, 128))
         
         # 3. Rich Content (Hybrid Capture)
-        # Selector: [data-slide-index="{slide_index}"] .rich-content-area
-        selector = f'[data-slide-index="{slide_index}"] .rich-content-area'
+        # Selector: .rich-content-area[data-slide-index="{slide_index}"]
+        selector = f'.rich-content-area[data-slide-index="{slide_index}"]'
         content_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector)
         if content_bytes:
             left, top, width, height = self._grid_to_inches(2, 32, 5, 17)
@@ -330,7 +330,7 @@ class NativePPTXConverter(BaseConverter):
         Render L27 Layout: Image Left with Content Right.
         """
         # 1. Left Image (Hybrid Capture of container to handle bg/img logic)
-        selector = f'[data-slide-index="{slide_index}"] .image-container'
+        selector = f'.image-container[data-slide-index="{slide_index}"]'
         img_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector)
         if img_bytes:
             left, top, width, height = self._grid_to_inches(1, 12, 1, 19)
@@ -354,7 +354,7 @@ class NativePPTXConverter(BaseConverter):
         Render L29 Layout: Hero Full-Bleed (Full Slide Hybrid Capture).
         """
         # Capture the entire hero content area which spans the whole slide
-        selector = f'[data-slide-index="{slide_index}"] .hero-content-area'
+        selector = f'.hero-content-area[data-slide-index="{slide_index}"]'
         hero_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector)
         if hero_bytes:
             left, top, width, height = self._grid_to_inches(1, 33, 1, 19) # Full slide 1-32 cols, 1-18 rows
