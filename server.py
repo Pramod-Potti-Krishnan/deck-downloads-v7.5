@@ -238,17 +238,26 @@ async def convert_to_pptx(request: PPTXConversionRequest):
         logger.info(f"  Presentation ID: {presentation_id}")
         logger.info(f"  Slide Count: {request.slide_count}")
         logger.info(f"  Quality: {request.quality}")
+        logger.info(f"  Variant Requested: '{request.variant}'")
 
-        # Initialize converter
-        converter = PPTXConverter(base_url=base_url)
-
-        # Generate PPTX
-        pptx_bytes = await converter.generate_pptx(
-            presentation_id=presentation_id,
-            slide_count=request.slide_count,
-            aspect_ratio=request.aspect_ratio,
-            quality=request.quality
-        )
+        # Choose converter based on variant
+        if request.variant == "native":
+            logger.info(f"Using Native PPTX Converter for {presentation_id}")
+            converter = NativePPTXConverter(base_url=base_url)
+            pptx_bytes = await converter.generate_pptx(
+                presentation_id=presentation_id,
+                slide_count=request.slide_count,
+                # We need to fetch data inside converter if not passed here
+            )
+        else:
+            logger.info(f"Using Screenshot PPTX Converter for {presentation_id}")
+            converter = PPTXConverter(base_url=base_url)
+            pptx_bytes = await converter.generate_pptx(
+                presentation_id=presentation_id,
+                slide_count=request.slide_count,
+                aspect_ratio=request.aspect_ratio,
+                quality=request.quality
+            )
 
         logger.info(f"✅ PPTX generated: {len(pptx_bytes):,} bytes")
 
