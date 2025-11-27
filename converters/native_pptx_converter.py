@@ -164,7 +164,7 @@ class NativePPTXConverter(BaseConverter):
             slide,
             text=content.get('slide_title', ''),
             grid=(2, 32, 2, 3),
-            font_size=42,
+            font_size=32,  # 42px -> 32pt
             is_bold=True,
             color=RGBColor(31, 41, 55)  # #1f2937
         )
@@ -174,7 +174,7 @@ class NativePPTXConverter(BaseConverter):
             slide,
             text=content.get('element_1', ''),
             grid=(2, 32, 3, 4),
-            font_size=24,
+            font_size=18,  # 24px -> 18pt
             color=RGBColor(107, 114, 128)  # #6b7280
         )
         
@@ -193,7 +193,7 @@ class NativePPTXConverter(BaseConverter):
             slide,
             text=content.get('element_3', ''),
             grid=(2, 32, 15, 17),
-            font_size=20,
+            font_size=15,  # 20px -> 15pt
             color=RGBColor(55, 65, 81)  # #374151
         )
         
@@ -222,7 +222,7 @@ class NativePPTXConverter(BaseConverter):
             slide,
             text=content.get('slide_title', ''),
             grid=(2, 32, 2, 3),
-            font_size=42,
+            font_size=32,  # 42px -> 32pt
             is_bold=True,
             color=RGBColor(31, 41, 55)
         )
@@ -232,7 +232,7 @@ class NativePPTXConverter(BaseConverter):
             slide,
             text=content.get('element_1', ''),
             grid=(2, 32, 3, 4),
-            font_size=24,
+            font_size=18,  # 24px -> 18pt
             color=RGBColor(107, 114, 128)
         )
         
@@ -254,7 +254,7 @@ class NativePPTXConverter(BaseConverter):
             slide,
             text=text_content,
             grid=(23, 32, 5, 17),
-            font_size=20,
+            font_size=15,  # 20px -> 15pt
             color=RGBColor(55, 65, 81)
         )
         
@@ -264,7 +264,7 @@ class NativePPTXConverter(BaseConverter):
                 slide,
                 text=content.get('presentation_name'),
                 grid=(2, 7, 18, 19),
-                font_size=18,
+                font_size=14,  # 18px -> 14pt
                 color=RGBColor(31, 41, 55)
             )
 
@@ -273,10 +273,10 @@ class NativePPTXConverter(BaseConverter):
         Render L03 Layout: Two Charts in Columns with Text Below.
         """
         # 1. Title
-        self._add_text_box(slide, content.get('slide_title', ''), (2, 32, 2, 3), 42, True, RGBColor(31, 41, 55))
+        self._add_text_box(slide, content.get('slide_title', ''), (2, 32, 2, 3), 32, True, RGBColor(31, 41, 55))
         
         # 2. Subtitle
-        self._add_text_box(slide, content.get('element_1', ''), (2, 32, 3, 4), 24, False, RGBColor(107, 114, 128))
+        self._add_text_box(slide, content.get('element_1', ''), (2, 32, 3, 4), 18, False, RGBColor(107, 114, 128))
         
         # 3. Left Chart (Hybrid)
         selector_left = f'[data-section-type="chart1"][data-slide-index="{slide_index}"]'
@@ -293,25 +293,25 @@ class NativePPTXConverter(BaseConverter):
             slide.shapes.add_picture(io.BytesIO(chart2_bytes), left, top, width, height)
             
         # 5. Left Body
-        self._add_text_box(slide, content.get('element_3', ''), (2, 16, 14, 17), 20, False, RGBColor(55, 65, 81))
+        self._add_text_box(slide, content.get('element_3', ''), (2, 16, 14, 17), 15, False, RGBColor(55, 65, 81))
         
         # 6. Right Body
-        self._add_text_box(slide, content.get('element_5', ''), (17, 31, 14, 17), 20, False, RGBColor(55, 65, 81))
+        self._add_text_box(slide, content.get('element_5', ''), (17, 31, 14, 17), 15, False, RGBColor(55, 65, 81))
         
         # 7. Footer
         if content.get('presentation_name'):
-            self._add_text_box(slide, content.get('presentation_name'), (2, 7, 18, 19), 18, False, RGBColor(31, 41, 55))
+            self._add_text_box(slide, content.get('presentation_name'), (2, 7, 18, 19), 14, False, RGBColor(31, 41, 55))
 
     async def _render_L25(self, slide, content, slide_index, presentation_id):
         """
         Render L25 Layout: Main Content Shell (Hybrid Rich Content).
         """
         # 1. Title - Increased height to 2 rows (2-4) to prevent overlap
-        self._add_text_box(slide, content.get('slide_title', ''), (2, 32, 2, 4), 42, True, RGBColor(31, 41, 55))
+        self._add_text_box(slide, content.get('slide_title', ''), (2, 32, 2, 4), 32, True, RGBColor(31, 41, 55))
         
         # 2. Subtitle - Moved to row 4-5
         subtitle = content.get('subtitle') or content.get('element_1')
-        self._add_text_box(slide, subtitle, (2, 32, 4, 5), 24, False, RGBColor(107, 114, 128))
+        self._add_text_box(slide, subtitle, (2, 32, 4, 5), 18, False, RGBColor(107, 114, 128))
         
         # 3. Rich Content (Hybrid Capture)
         # Selector: .rich-content-area[data-slide-index="{slide_index}"]
@@ -323,7 +323,7 @@ class NativePPTXConverter(BaseConverter):
             
         # 4. Footer
         if content.get('presentation_name'):
-            self._add_text_box(slide, content.get('presentation_name'), (2, 7, 18, 19), 18, False, RGBColor(31, 41, 55))
+            self._add_text_box(slide, content.get('presentation_name'), (2, 7, 18, 19), 14, False, RGBColor(31, 41, 55))
 
     async def _render_L27(self, slide, content, slide_index, presentation_id):
         """
@@ -337,17 +337,17 @@ class NativePPTXConverter(BaseConverter):
             slide.shapes.add_picture(io.BytesIO(img_bytes), left, top, width, height)
             
         # 2. Title
-        self._add_text_box(slide, content.get('slide_title', ''), (13, 32, 2, 3), 42, True, RGBColor(31, 41, 55))
+        self._add_text_box(slide, content.get('slide_title', ''), (13, 32, 2, 3), 32, True, RGBColor(31, 41, 55))
         
         # 3. Subtitle
-        self._add_text_box(slide, content.get('element_1', ''), (13, 32, 3, 4), 24, False, RGBColor(107, 114, 128))
+        self._add_text_box(slide, content.get('element_1', ''), (13, 32, 3, 4), 18, False, RGBColor(107, 114, 128))
         
         # 4. Main Content
-        self._add_text_box(slide, content.get('main_content', ''), (13, 32, 5, 17), 20, False, RGBColor(55, 65, 81))
+        self._add_text_box(slide, content.get('main_content', ''), (13, 32, 5, 17), 15, False, RGBColor(55, 65, 81))
         
         # 5. Footer
         if content.get('presentation_name'):
-            self._add_text_box(slide, content.get('presentation_name'), (13, 18, 18, 19), 18, False, RGBColor(31, 41, 55))
+            self._add_text_box(slide, content.get('presentation_name'), (13, 18, 18, 19), 14, False, RGBColor(31, 41, 55))
 
     async def _render_L29(self, slide, content, slide_index, presentation_id):
         """
