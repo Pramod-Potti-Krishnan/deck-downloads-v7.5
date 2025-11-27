@@ -360,14 +360,7 @@ class NativePPTXConverter(BaseConverter):
             left, top, width, height = self._grid_to_inches(1, 33, 1, 19) # Full slide 1-32 cols, 1-18 rows
             slide.shapes.add_picture(io.BytesIO(hero_bytes), left, top, width, height)
             
-        col_start, col_end, row_start, row_end = grid
-        left, top, width, height = self._grid_to_inches(col_start, col_end, row_start, row_end)
-        
-        txBox = slide.shapes.add_textbox(left, top, width, height)
-        tf = txBox.text_frame
-        tf.word_wrap = True
-        
-        p = tf.paragraphs[0]
+
         p.text = text
         p.font.size = Pt(font_size)
         p.font.bold = is_bold
