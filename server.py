@@ -46,17 +46,15 @@ class PDFConversionRequest(BaseModel):
         description="Full URL to presentation (e.g., https://v75-main.railway.app/p/{id})",
         example="https://v75-main.railway.app/p/abc123"
     )
-    landscape: bool = Field(
-        default=True,
-        description="Use landscape orientation"
-    )
-    print_background: bool = Field(
-        default=True,
-        description="Include background graphics"
+    slide_count: int = Field(
+        ...,
+        description="Number of slides in the presentation (required for screenshot-based PDF generation)",
+        gt=0,
+        example=7
     )
     quality: Literal["high", "medium", "low"] = Field(
         default="high",
-        description="Quality level for PDF generation"
+        description="Quality level for PDF generation (high: 1920×1080, medium: 1440×810, low: 960×540)"
     )
 
 
@@ -145,13 +143,19 @@ async def health_check():
 @app.post("/convert/pdf")
 async def convert_to_pdf(request: PDFConversionRequest):
     """
-    Convert presentation to PDF
+    Convert presentation to PDF using screenshot-based approach
 
     This endpoint:
     1. Navigates to the presentation URL using Playwright
     2. Waits for Reveal.js to load
-    3. Generates PDF using browser's PDF export API
-    4. Returns PDF file as download
+    3. Captures each slide as a high-resolution screenshot
+    4. Combines screenshots into a PDF
+    5. Returns PDF file as download
+
+    Why screenshot-based:
+    The v7.5-main presentation uses a strict 32×18 CSS Grid system that
+    conflicts with Reveal.js print-pdf mode, causing positioning and margin
+    issues. Screenshot-based approach ensures 100% accurate rendering.
 
     The presentation URL should point to a v7.5-main viewer page.
     """
@@ -166,16 +170,16 @@ async def convert_to_pdf(request: PDFConversionRequest):
 
         logger.info(f"  Base URL: {base_url}")
         logger.info(f"  Presentation ID: {presentation_id}")
+        logger.info(f"  Slide Count: {request.slide_count}")
         logger.info(f"  Quality: {request.quality}")
 
         # Initialize converter
         converter = PDFConverter(base_url=base_url)
 
-        # Generate PDF
+        # Generate PDF using screenshot-based approach
         pdf_bytes = await converter.generate_pdf(
             presentation_id=presentation_id,
-            landscape=request.landscape,
-            print_background=request.print_background,
+            slide_count=request.slide_count,
             quality=request.quality
         )
 
