@@ -361,6 +361,19 @@ class NativePPTXConverter(BaseConverter):
             slide.shapes.add_picture(io.BytesIO(hero_bytes), left, top, width, height)
             
 
+    def _add_text_box(self, slide, text, grid, font_size, is_bold=False, color=None, align=PP_ALIGN.LEFT):
+        """Helper to add a text box mapped to grid."""
+        if not text:
+            return
+            
+        col_start, col_end, row_start, row_end = grid
+        left, top, width, height = self._grid_to_inches(col_start, col_end, row_start, row_end)
+        
+        txBox = slide.shapes.add_textbox(left, top, width, height)
+        tf = txBox.text_frame
+        tf.word_wrap = True
+        
+        p = tf.paragraphs[0]
         p.text = text
         p.font.size = Pt(font_size)
         p.font.bold = is_bold
