@@ -87,6 +87,14 @@ class NativePPTXConverter(BaseConverter):
                 await self._render_L01(slide, content, idx, presentation_id)
             elif layout_type == 'L02':
                 await self._render_L02(slide, content, idx, presentation_id)
+            elif layout_type == 'L03':
+                await self._render_L03(slide, content, idx, presentation_id)
+            elif layout_type == 'L25':
+                await self._render_L25(slide, content, idx, presentation_id)
+            elif layout_type == 'L27':
+                await self._render_L27(slide, content, idx, presentation_id)
+            elif layout_type == 'L29':
+                await self._render_L29(slide, content, idx, presentation_id)
             else:
                 logger.warning(f"Unsupported layout {layout_type}, skipping content")
 
@@ -260,10 +268,97 @@ class NativePPTXConverter(BaseConverter):
                 color=RGBColor(31, 41, 55)
             )
 
-    def _add_text_box(self, slide, text, grid, font_size, is_bold=False, color=None, align=PP_ALIGN.LEFT):
-        """Helper to add a text box mapped to grid."""
-        if not text:
-            return
+    async def _render_L03(self, slide, content, slide_index, presentation_id):
+        """
+        Render L03 Layout: Two Charts in Columns with Text Below.
+        """
+        # 1. Title
+        self._add_text_box(slide, content.get('slide_title', ''), (2, 32, 2, 3), 42, True, RGBColor(31, 41, 55))
+        
+        # 2. Subtitle
+        self._add_text_box(slide, content.get('element_1', ''), (2, 32, 3, 4), 24, False, RGBColor(107, 114, 128))
+        
+        # 3. Left Chart (Hybrid)
+        selector_left = f'[data-slide-index="{slide_index}"] [data-section-type="chart1"]'
+        chart1_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector_left)
+        if chart1_bytes:
+            left, top, width, height = self._grid_to_inches(2, 16, 5, 14)
+            slide.shapes.add_picture(io.BytesIO(chart1_bytes), left, top, width, height)
+            
+        # 4. Right Chart (Hybrid)
+        selector_right = f'[data-slide-index="{slide_index}"] [data-section-type="chart2"]'
+        chart2_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector_right)
+        if chart2_bytes:
+            left, top, width, height = self._grid_to_inches(17, 31, 5, 14)
+            slide.shapes.add_picture(io.BytesIO(chart2_bytes), left, top, width, height)
+            
+        # 5. Left Body
+        self._add_text_box(slide, content.get('element_3', ''), (2, 16, 14, 17), 20, False, RGBColor(55, 65, 81))
+        
+        # 6. Right Body
+        self._add_text_box(slide, content.get('element_5', ''), (17, 31, 14, 17), 20, False, RGBColor(55, 65, 81))
+        
+        # 7. Footer
+        if content.get('presentation_name'):
+            self._add_text_box(slide, content.get('presentation_name'), (2, 7, 18, 19), 18, False, RGBColor(31, 41, 55))
+
+    async def _render_L25(self, slide, content, slide_index, presentation_id):
+        """
+        Render L25 Layout: Main Content Shell (Hybrid Rich Content).
+        """
+        # 1. Title
+        self._add_text_box(slide, content.get('slide_title', ''), (2, 32, 2, 3), 42, True, RGBColor(31, 41, 55))
+        
+        # 2. Subtitle
+        subtitle = content.get('subtitle') or content.get('element_1')
+        self._add_text_box(slide, subtitle, (2, 32, 3, 4), 24, False, RGBColor(107, 114, 128))
+        
+        # 3. Rich Content (Hybrid Capture)
+        # Selector: [data-slide-index="{slide_index}"] .rich-content-area
+        selector = f'[data-slide-index="{slide_index}"] .rich-content-area'
+        content_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector)
+        if content_bytes:
+            left, top, width, height = self._grid_to_inches(2, 32, 5, 17)
+            slide.shapes.add_picture(io.BytesIO(content_bytes), left, top, width, height)
+            
+        # 4. Footer
+        if content.get('presentation_name'):
+            self._add_text_box(slide, content.get('presentation_name'), (2, 7, 18, 19), 18, False, RGBColor(31, 41, 55))
+
+    async def _render_L27(self, slide, content, slide_index, presentation_id):
+        """
+        Render L27 Layout: Image Left with Content Right.
+        """
+        # 1. Left Image (Hybrid Capture of container to handle bg/img logic)
+        selector = f'[data-slide-index="{slide_index}"] .image-container'
+        img_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector)
+        if img_bytes:
+            left, top, width, height = self._grid_to_inches(1, 12, 1, 19)
+            slide.shapes.add_picture(io.BytesIO(img_bytes), left, top, width, height)
+            
+        # 2. Title
+        self._add_text_box(slide, content.get('slide_title', ''), (13, 32, 2, 3), 42, True, RGBColor(31, 41, 55))
+        
+        # 3. Subtitle
+        self._add_text_box(slide, content.get('element_1', ''), (13, 32, 3, 4), 24, False, RGBColor(107, 114, 128))
+        
+        # 4. Main Content
+        self._add_text_box(slide, content.get('main_content', ''), (13, 32, 5, 17), 20, False, RGBColor(55, 65, 81))
+        
+        # 5. Footer
+        if content.get('presentation_name'):
+            self._add_text_box(slide, content.get('presentation_name'), (13, 18, 18, 19), 18, False, RGBColor(31, 41, 55))
+
+    async def _render_L29(self, slide, content, slide_index, presentation_id):
+        """
+        Render L29 Layout: Hero Full-Bleed (Full Slide Hybrid Capture).
+        """
+        # Capture the entire hero content area which spans the whole slide
+        selector = f'[data-slide-index="{slide_index}"] .hero-content-area'
+        hero_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector)
+        if hero_bytes:
+            left, top, width, height = self._grid_to_inches(1, 33, 1, 19) # Full slide 1-32 cols, 1-18 rows
+            slide.shapes.add_picture(io.BytesIO(hero_bytes), left, top, width, height)
             
         col_start, col_end, row_start, row_end = grid
         left, top, width, height = self._grid_to_inches(col_start, col_end, row_start, row_end)
