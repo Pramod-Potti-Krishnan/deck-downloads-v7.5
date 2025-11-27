@@ -108,6 +108,32 @@ class BaseConverter:
             await self._page.wait_for_selector('.reveal.ready', timeout=10000)
             logger.info("Reveal.js initialized")
 
+            # Inject CSS to hide UI elements for clean screenshots
+            await self._page.add_style_tag(content="""
+                #help-text,
+                #toggle-edit-mode,
+                #edit-controls,
+                #edit-notification,
+                .edit-shortcuts,
+                #toggle-review-mode,
+                #selection-indicator,
+                #regeneration-panel,
+                .reveal .controls,
+                .reveal .progress,
+                .reveal .slide-number,
+                .grid-overlay {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                }
+                
+                /* Ensure background is white */
+                body, .reveal {
+                    background-color: white !important;
+                }
+            """)
+            logger.info("Injected CSS to hide UI elements")
+
             # Capture each slide
             for slide_index in range(slide_count):
                 logger.info(f"Capturing slide {slide_index + 1}/{slide_count}")
@@ -121,9 +147,11 @@ class BaseConverter:
                 # Wait for any images or content to load
                 await self._page.wait_for_load_state('networkidle', timeout=5000)
 
-                # Capture screenshot of the reveal viewport
-                screenshot = await self._page.locator('.reveal').screenshot(
+                # Capture screenshot of the full viewport
+                # We use full_page=False to capture exactly the viewport size (1920x1080)
+                screenshot = await self._page.screenshot(
                     type='png',
+                    full_page=False,
                     scale='device'  # Use device scale factor (2x for high DPI)
                 )
 
