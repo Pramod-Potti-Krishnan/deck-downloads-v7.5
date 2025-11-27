@@ -20,17 +20,68 @@ class PDFConverter(BaseConverter):
     async def generate_pdf(
         self,
         presentation_id: str,
+        slide_count: int,
+        output_path: Optional[Path] = None,
+        quality: str = "high"
+    ) -> bytes:
+        """
+        Generate a PDF from a presentation using screenshot-based approach.
+
+        This method captures each slide as a high-resolution screenshot and
+        combines them into a PDF. This avoids CSS Grid layout conflicts with
+        Reveal.js print-pdf mode, ensuring accurate positioning and margins.
+
+        WHY SCREENSHOT-BASED:
+        The v7.5-main presentation uses a strict 32×18 CSS Grid system that
+        conflicts with Reveal.js print-pdf mode CSS transformations. This causes:
+        - Content pushed down from correct vertical positions
+        - Left margins ignored (content sticks to left edge)
+        - Grid layout calculations breaking
+
+        Screenshot-based approach captures the exact frontend rendering without
+        any CSS conflicts, ensuring 100% accurate positioning.
+
+        Args:
+            presentation_id: The UUID of the presentation
+            slide_count: Number of slides in the presentation
+            output_path: Optional file path to save the PDF
+            quality: Quality setting - 'high', 'medium', or 'low'
+
+        Returns:
+            PDF file as bytes
+
+        Raises:
+            ValueError: If presentation cannot be loaded
+            RuntimeError: If PDF generation fails
+        """
+        logger.info(f"Generating PDF from screenshots for: {presentation_id}")
+        logger.info(f"Using screenshot-based approach to preserve CSS Grid layout")
+
+        # Use screenshot-based method to avoid CSS Grid conflicts
+        return await self.generate_pdf_from_screenshots(
+            presentation_id=presentation_id,
+            slide_count=slide_count,
+            output_path=output_path
+        )
+
+    async def generate_pdf_legacy_printmode(
+        self,
+        presentation_id: str,
         output_path: Optional[Path] = None,
         landscape: bool = True,
         print_background: bool = True,
         quality: str = "high"
     ) -> bytes:
         """
-        Generate a PDF from a presentation.
+        LEGACY METHOD: Generate PDF using Reveal.js print-pdf mode.
 
-        This method uses Playwright's built-in PDF generation to create
-        a multi-page PDF directly from the presentation HTML using
-        Reveal.js print-pdf mode for optimal rendering.
+        WARNING: This method has known issues with CSS Grid layouts:
+        - Content positioning is incorrect (pushed down)
+        - Left margins are not preserved
+        - Grid layout calculations break
+
+        This method is kept for backward compatibility only.
+        Use generate_pdf() instead for accurate rendering.
 
         Args:
             presentation_id: The UUID of the presentation
@@ -226,12 +277,19 @@ class PDFConverter(BaseConverter):
             pdf_buffer = io.BytesIO()
 
             # Save first image and append rest
-            images[0].save(
+            # Resize images to standard 1920x1080 to ensure correct PDF page size
+            # This fixes the "content shift" and "white bars" issues caused by high-DPI screenshots
+            resized_images = []
+            for img in images:
+                if img.width != 1920 or img.height != 1080:
+                    img = img.resize((1920, 1080), Image.Resampling.LANCZOS)
+                resized_images.append(img)
+            
+            resized_images[0].save(
                 pdf_buffer,
                 format='PDF',
                 save_all=True,
-                append_images=images[1:] if len(images) > 1 else [],
-                resolution=100.0
+                append_images=resized_images[1:] if len(resized_images) > 1 else []
             )
 
             pdf_bytes = pdf_buffer.getvalue()
