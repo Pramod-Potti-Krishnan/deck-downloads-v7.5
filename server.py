@@ -46,9 +46,9 @@ class PDFConversionRequest(BaseModel):
         description="Full URL to presentation (e.g., https://v75-main.railway.app/p/{id})",
         example="https://v75-main.railway.app/p/abc123"
     )
-    slide_count: int = Field(
-        ...,
-        description="Number of slides in the presentation (required for screenshot-based PDF generation)",
+    slide_count: Optional[int] = Field(
+        default=None,
+        description="Number of slides in the presentation (optional, will be auto-detected if missing)",
         gt=0,
         example=7
     )
@@ -56,6 +56,9 @@ class PDFConversionRequest(BaseModel):
         default="high",
         description="Quality level for PDF generation (high: 1920×1080, medium: 1440×810, low: 960×540)"
     )
+    # Allow extra fields to prevent 422 errors from older clients
+    landscape: Optional[bool] = None
+    aspect_ratio: Optional[str] = None
 
 
 class PPTXConversionRequest(BaseModel):

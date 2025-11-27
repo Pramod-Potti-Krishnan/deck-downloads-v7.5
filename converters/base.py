@@ -74,7 +74,7 @@ class BaseConverter:
     async def capture_slide_screenshots(
         self,
         presentation_id: str,
-        slide_count: int
+        slide_count: Optional[int] = None
     ) -> List[bytes]:
         """
         Capture screenshots of all slides in a presentation.
@@ -133,6 +133,12 @@ class BaseConverter:
                 }
             """)
             logger.info("Injected CSS to hide UI elements")
+
+            # If slide_count is missing, fetch it from Reveal.js
+            if slide_count is None:
+                logger.info("Slide count not provided, detecting from presentation...")
+                slide_count = await self._page.evaluate("Reveal.getTotalSlides()")
+                logger.info(f"Detected {slide_count} slides")
 
             # Capture each slide
             for slide_index in range(slide_count):

@@ -20,7 +20,7 @@ class PDFConverter(BaseConverter):
     async def generate_pdf(
         self,
         presentation_id: str,
-        slide_count: int,
+        slide_count: Optional[int] = None,
         output_path: Optional[Path] = None,
         quality: str = "high"
     ) -> bytes:
@@ -235,7 +235,7 @@ class PDFConverter(BaseConverter):
     async def generate_pdf_from_screenshots(
         self,
         presentation_id: str,
-        slide_count: int,
+        slide_count: Optional[int] = None,
         output_path: Optional[Path] = None
     ) -> bytes:
         """
