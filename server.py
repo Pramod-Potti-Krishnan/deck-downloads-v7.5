@@ -17,6 +17,7 @@ import uvicorn
 
 from converters.pdf_converter import PDFConverter
 from converters.pptx_converter import PPTXConverter
+from converters.native_pptx_converter import NativePPTXConverter
 
 logger = logging.getLogger(__name__)
 
@@ -68,11 +69,15 @@ class PPTXConversionRequest(BaseModel):
         description="Full URL to presentation (e.g., https://v75-main.railway.app/p/{id})",
         example="https://v75-main.railway.app/p/abc123"
     )
-    slide_count: int = Field(
-        ...,
-        description="Number of slides in the presentation",
+    slide_count: Optional[int] = Field(
+        default=None,
+        description="Number of slides in the presentation (optional, will be auto-detected if missing)",
         gt=0,
         example=7
+    )
+    variant: Literal["screenshot", "native"] = Field(
+        default="screenshot",
+        description="PPTX generation variant: 'screenshot' (default) or 'native' (editable text/shapes)"
     )
     aspect_ratio: Literal["16:9", "4:3"] = Field(
         default="16:9",

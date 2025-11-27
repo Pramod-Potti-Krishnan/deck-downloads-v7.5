@@ -105,50 +105,11 @@ class BaseConverter:
                 raise ValueError(f"Failed to load presentation: {presentation_id}")
 
             # Wait for Reveal.js to initialize
-            await self._page.wait_for_selector('.reveal.ready', timeout=10000)
-            logger.info("Reveal.js initialized")
+            # Configure Reveal.js
+            await self._configure_reveal()
 
-            # Configure Reveal.js for screenshot capture:
-            # 1. center: false -> Forces slides to top-left (0,0) to prevent drift/rounding errors
-            # 2. margin: 0 -> Removes default margins
-            # 3. transition: 'none' -> Disables slide animations to prevent capturing "mid-scroll" (user's hypothesis)
-            await self._page.evaluate("""
-                if (typeof Reveal !== 'undefined') {
-                    Reveal.configure({ 
-                        center: false, 
-                        margin: 0,
-                        transition: 'none',
-                        backgroundTransition: 'none'
-                    });
-                }
-            """)
-            logger.info("Configured Reveal.js (center: false, transition: none)")
-
-            # Inject CSS to hide UI elements for clean screenshots
-            await self._page.add_style_tag(content="""
-                #help-text,
-                #toggle-edit-mode,
-                #edit-controls,
-                #edit-notification,
-                .edit-shortcuts,
-                #toggle-review-mode,
-                #selection-indicator,
-                #regeneration-panel,
-                .reveal .controls,
-                .reveal .progress,
-                .reveal .slide-number,
-                .grid-overlay {
-                    display: none !important;
-                    visibility: hidden !important;
-                    opacity: 0 !important;
-                }
-                
-                /* Ensure background is white */
-                body, .reveal {
-                    background-color: white !important;
-                }
-            """)
-            logger.info("Injected CSS to hide UI elements")
+            # Inject CSS to hide UI elements
+            await self._inject_clean_css()
 
             # If slide_count is missing, fetch it from Reveal.js
             if slide_count is None:
@@ -189,6 +150,103 @@ class BaseConverter:
 
         finally:
             await self._close_browser()
+
+    async def capture_element_screenshot(
+        self,
+        presentation_id: str,
+        slide_index: int,
+        selector: str
+    ) -> Optional[bytes]:
+        """
+        Capture screenshot of a specific element on a slide.
+        
+        Args:
+            presentation_id: The UUID of the presentation
+            slide_index: The index of the slide (0-based)
+            selector: CSS selector for the element to capture
+            
+        Returns:
+            Screenshot bytes or None if element not found
+        """
+        await self._init_browser()
+        
+        url = f"{self.base_url}/p/{presentation_id}"
+        
+        try:
+            # Navigate if not already on the page
+            if not self._page.url.startswith(url):
+                logger.info(f"Navigating to {url}")
+                response = await self._page.goto(url, wait_until='networkidle')
+                if not response or response.status != 200:
+                    raise ValueError(f"Failed to load presentation: {presentation_id}")
+                
+                await self._wait_for_reveal_ready()
+                await self._configure_reveal()
+                await self._inject_clean_css()
+
+            # Go to slide
+            await self._page.evaluate(f"Reveal.slide({slide_index}, 0)")
+            await asyncio.sleep(0.5) # Wait for render
+            
+            # Wait for element
+            try:
+                element = await self._page.wait_for_selector(selector, timeout=5000)
+                if element:
+                    # Check if element is visible
+                    is_visible = await element.is_visible()
+                    if is_visible:
+                        return await element.screenshot(type='png')
+                    else:
+                        logger.warning(f"Element {selector} is not visible on slide {slide_index}")
+            except Exception:
+                logger.warning(f"Element {selector} not found on slide {slide_index}")
+                
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error capturing element {selector}: {e}")
+            return None
+
+    async def _configure_reveal(self):
+        """Configure Reveal.js for clean capture (no centering, no transitions)."""
+        await self._page.evaluate("""
+            if (typeof Reveal !== 'undefined') {
+                Reveal.configure({ 
+                    center: false, 
+                    margin: 0,
+                    transition: 'none',
+                    backgroundTransition: 'none'
+                });
+            }
+        """)
+        logger.info("Configured Reveal.js (center: false, transition: none)")
+
+    async def _inject_clean_css(self):
+        """Inject CSS to hide UI elements."""
+        await self._page.add_style_tag(content="""
+            #help-text,
+            #toggle-edit-mode,
+            #edit-controls,
+            #edit-notification,
+            .edit-shortcuts,
+            #toggle-review-mode,
+            #selection-indicator,
+            #regeneration-panel,
+            .reveal .controls,
+            .reveal .progress,
+            .reveal .slide-number,
+            .grid-overlay {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+            }
+            
+            /* Ensure background is white */
+            body, .reveal {
+                background-color: white !important;
+            }
+        """)
+        logger.info("Injected CSS to hide UI elements")
 
     async def _wait_for_reveal_ready(self, timeout: int = 10000) -> None:
         """
