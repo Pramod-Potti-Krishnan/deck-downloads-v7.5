@@ -86,8 +86,7 @@ class NativePPTXConverter(BaseConverter):
             if layout_type == 'L01':
                 await self._render_L01(slide, content, idx, presentation_id)
             elif layout_type == 'L02':
-                # TODO: Implement L02
-                pass
+                await self._render_L02(slide, content, idx, presentation_id)
             else:
                 logger.warning(f"Unsupported layout {layout_type}, skipping content")
 
@@ -191,6 +190,67 @@ class NativePPTXConverter(BaseConverter):
         )
         
         # 5. Footer (Presentation Name)
+        if content.get('presentation_name'):
+            self._add_text_box(
+                slide,
+                text=content.get('presentation_name'),
+                grid=(2, 7, 18, 19),
+                font_size=18,
+                color=RGBColor(31, 41, 55)
+            )
+
+    async def _render_L02(self, slide, content, slide_index, presentation_id):
+        """
+        Render L02 Layout: Left Diagram with Text Box on Right.
+        
+        L02 Grid Mapping:
+        - Title: row 2/3, col 2/32
+        - Subtitle: row 3/4, col 2/32
+        - Diagram (Left): row 5/17, col 2/23 (Hybrid Capture)
+        - Text (Right): row 5/17, col 23/32
+        """
+        # 1. Title
+        self._add_text_box(
+            slide,
+            text=content.get('slide_title', ''),
+            grid=(2, 32, 2, 3),
+            font_size=42,
+            is_bold=True,
+            color=RGBColor(31, 41, 55)
+        )
+        
+        # 2. Subtitle
+        self._add_text_box(
+            slide,
+            text=content.get('element_1', ''),
+            grid=(2, 32, 3, 4),
+            font_size=24,
+            color=RGBColor(107, 114, 128)
+        )
+        
+        # 3. Diagram (Left) - Hybrid Capture
+        # Selector: [data-slide-index="{slide_index}"] .diagram-container
+        selector = f'[data-slide-index="{slide_index}"] .diagram-container'
+        diagram_bytes = await self.capture_element_screenshot(presentation_id, slide_index, selector)
+        
+        if diagram_bytes:
+            left, top, width, height = self._grid_to_inches(2, 23, 5, 17)
+            slide.shapes.add_picture(io.BytesIO(diagram_bytes), left, top, width, height)
+            
+        # 4. Text (Right)
+        # Note: element_2 might be HTML, but we'll render as plain text for now
+        text_content = content.get('element_2', '')
+        # Simple HTML tag stripping if needed, or just dump it
+        # For now, assuming it's readable text
+        self._add_text_box(
+            slide,
+            text=text_content,
+            grid=(23, 32, 5, 17),
+            font_size=20,
+            color=RGBColor(55, 65, 81)
+        )
+        
+        # 5. Footer
         if content.get('presentation_name'):
             self._add_text_box(
                 slide,

@@ -76,8 +76,8 @@ class PPTXConversionRequest(BaseModel):
         example=7
     )
     variant: Literal["screenshot", "native"] = Field(
-        default="screenshot",
-        description="PPTX generation variant: 'screenshot' (default) or 'native' (editable text/shapes)"
+        default="native",
+        description="PPTX generation variant: 'screenshot' or 'native' (default)"
     )
     aspect_ratio: Literal["16:9", "4:3"] = Field(
         default="16:9",
