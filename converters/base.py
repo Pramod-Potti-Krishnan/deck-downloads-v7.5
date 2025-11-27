@@ -108,6 +108,22 @@ class BaseConverter:
             await self._page.wait_for_selector('.reveal.ready', timeout=10000)
             logger.info("Reveal.js initialized")
 
+            # Configure Reveal.js for screenshot capture:
+            # 1. center: false -> Forces slides to top-left (0,0) to prevent drift/rounding errors
+            # 2. margin: 0 -> Removes default margins
+            # 3. transition: 'none' -> Disables slide animations to prevent capturing "mid-scroll" (user's hypothesis)
+            await self._page.evaluate("""
+                if (typeof Reveal !== 'undefined') {
+                    Reveal.configure({ 
+                        center: false, 
+                        margin: 0,
+                        transition: 'none',
+                        backgroundTransition: 'none'
+                    });
+                }
+            """)
+            logger.info("Configured Reveal.js (center: false, transition: none)")
+
             # Inject CSS to hide UI elements for clean screenshots
             await self._page.add_style_tag(content="""
                 #help-text,
